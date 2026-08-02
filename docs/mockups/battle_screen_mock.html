@@ -1,0 +1,681 @@
+<title>バトル画面設計モック — 客席ボード×陣形パズル</title>
+<style>
+  :root {
+    --bg: #f7f3fb;
+    --bg-elevated: #ffffff;
+    --bg-sunken: #efe9f7;
+    --stage: #d6266f;
+    --stage-soft: #f4c8dc;
+    --audience: #5b3fd6;
+    --audience-soft: #d8d0f7;
+    --gold: #b8860a;
+    --text: #221933;
+    --text-muted: #6f6288;
+    --good: #1f9d5c;
+    --danger: #d5393d;
+    --border: rgba(34, 25, 51, 0.12);
+    --shadow: rgba(34, 25, 51, 0.16);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #130f1c;
+      --bg-elevated: #1c1529;
+      --bg-sunken: #0e0b16;
+      --stage: #ff5fa8;
+      --stage-soft: #4a223a;
+      --audience: #8f74ff;
+      --audience-soft: #2b2452;
+      --gold: #ffcf6b;
+      --text: #f4eefc;
+      --text-muted: #a898c4;
+      --good: #5ed692;
+      --danger: #ff6b6f;
+      --border: rgba(255, 255, 255, 0.1);
+      --shadow: rgba(0, 0, 0, 0.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #130f1c;
+    --bg-elevated: #1c1529;
+    --bg-sunken: #0e0b16;
+    --stage: #ff5fa8;
+    --stage-soft: #4a223a;
+    --audience: #8f74ff;
+    --audience-soft: #2b2452;
+    --gold: #ffcf6b;
+    --text: #f4eefc;
+    --text-muted: #a898c4;
+    --good: #5ed692;
+    --danger: #ff6b6f;
+    --border: rgba(255, 255, 255, 0.1);
+    --shadow: rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f3fb;
+    --bg-elevated: #ffffff;
+    --bg-sunken: #efe9f7;
+    --stage: #d6266f;
+    --stage-soft: #f4c8dc;
+    --audience: #5b3fd6;
+    --audience-soft: #d8d0f7;
+    --gold: #b8860a;
+    --text: #221933;
+    --text-muted: #6f6288;
+    --good: #1f9d5c;
+    --danger: #d5393d;
+    --border: rgba(34, 25, 51, 0.12);
+    --shadow: rgba(34, 25, 51, 0.16);
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic Medium", "Noto Sans JP",
+      "Segoe UI", sans-serif;
+    padding: 32px 16px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+  }
+
+  h1.page-title {
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  /* ---------------- 端末フレーム ---------------- */
+  .phone {
+    width: 402px;
+    max-width: 100%;
+    background: var(--bg-elevated);
+    border-radius: 28px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 60px var(--shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    padding: 14px 16px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .stage-name {
+    font-size: 17px;
+    font-weight: 800;
+    text-wrap: balance;
+  }
+  .formation-tag {
+    font-size: 10px;
+    color: var(--audience);
+    background: var(--audience-soft);
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .hp-gauge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hp-gauge__label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .hp-gauge__track {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--bg-sunken);
+    overflow: hidden;
+  }
+  .hp-gauge__fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--audience), color-mix(in srgb, var(--audience) 60%, var(--gold)));
+  }
+  .hp-gauge__value {
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ---------------- 舞台+客席をまとめる場面全体(アタック線オーバーレイ用) ---------------- */
+  .battle-scene {
+    position: relative;
+    margin: 14px 14px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ---------------- 客席ボード（3x3・クォータービュー） ---------------- */
+  .audience-deck {
+    position: relative;
+    margin: 0;
+    padding: 20px 10px 26px;
+    border-radius: 18px;
+    background:
+      repeating-linear-gradient(135deg, color-mix(in srgb, var(--audience) 7%, transparent) 0 2px, transparent 2px 22px),
+      repeating-linear-gradient(45deg, color-mix(in srgb, var(--audience) 7%, transparent) 0 2px, transparent 2px 22px),
+      linear-gradient(175deg, var(--audience-soft), var(--bg-sunken) 78%);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .audience-deck__caption {
+    position: absolute;
+    top: 8px;
+    left: 14px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .audience-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px 10px;
+    position: relative;
+    z-index: 1;
+  }
+  .audience-grid__row--judge .block { transform: scale(1.06); }
+  .audience-grid__row--crew .block { opacity: 0.94; transform: scale(0.94); }
+
+  .block {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 7px 6px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 3px 0 var(--shadow);
+    position: relative;
+  }
+  .block__icon { font-size: 18px; line-height: 1; }
+  .block__label {
+    font-size: 8.5px;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .block__hp-track {
+    width: 100%;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--bg-sunken);
+    overflow: hidden;
+  }
+  .block__hp-fill { height: 100%; border-radius: 999px; background: var(--good); }
+  .block--low .block__hp-fill { background: var(--gold); }
+  .block--critical .block__hp-fill { background: var(--danger); }
+  .block--down {
+    opacity: 0.45;
+    filter: grayscale(0.6);
+  }
+  .block--down .block__hp-fill { width: 0 !important; }
+  .block--down::after {
+    content: "陥落";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--danger);
+    background: color-mix(in srgb, var(--bg-elevated) 70%, transparent);
+    border-radius: 12px;
+  }
+  .block--target {
+    animation: telegraph-pulse 1.3s ease-in-out infinite;
+  }
+  @keyframes telegraph-pulse {
+    0%, 100% { box-shadow: 0 3px 0 var(--shadow), 0 0 0 0 color-mix(in srgb, var(--stage) 55%, transparent); }
+    50% { box-shadow: 0 3px 0 var(--shadow), 0 0 0 5px color-mix(in srgb, var(--stage) 0%, transparent); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .block--target { animation: none; outline: 2px solid var(--stage); }
+  }
+
+  /* 攻撃の形オーバーレイ(SVG) */
+  .attack-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* ---------------- 舞台（陣形） ---------------- */
+  .stage-floor {
+    position: relative;
+    margin: 0;
+    height: 200px;
+    border-radius: 18px;
+    background:
+      repeating-linear-gradient(135deg, color-mix(in srgb, var(--stage) 6%, transparent) 0 2px, transparent 2px 22px),
+      repeating-linear-gradient(45deg, color-mix(in srgb, var(--stage) 6%, transparent) 0 2px, transparent 2px 22px),
+      linear-gradient(10deg, var(--stage-soft), var(--bg-sunken) 82%);
+    border: 1px solid var(--border);
+    overflow: visible;
+  }
+  .stage-floor__caption {
+    position: absolute;
+    top: 8px;
+    left: 14px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .idol {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 74px;
+  }
+  .idol__badge-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .idol__face {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+    border: 2px solid var(--stage);
+    box-shadow: 0 5px 10px var(--shadow);
+    /* 実装時は idol.portrait のキャンバス描画(idolDetailView.js と同じ資産)に差し替える。
+       ここでは同じ「色相+イニシャル」方式(avatarHtml)のプレースホルダーで代用。 */
+    background: linear-gradient(160deg, hsl(var(--face-hue, 320) 70% 62%), hsl(var(--face-hue, 320) 70% 42%));
+  }
+  .idol__attr {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    font-size: 11px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px var(--shadow);
+  }
+  .idol__role {
+    position: absolute;
+    bottom: -3px;
+    right: -3px;
+    font-size: 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .idol__wrap { position: relative; }
+  .idol__name {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .idol__hp-track {
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--bg-sunken);
+    overflow: hidden;
+  }
+  .idol__hp-fill { height: 100%; border-radius: 999px; background: var(--good); }
+  .idol--warn .idol__hp-fill { background: var(--gold); }
+
+  .speech {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-elevated);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 5px 9px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 4px 10px var(--shadow);
+    animation: bubble-bounce 2.6s ease-in-out infinite;
+  }
+  .speech::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--bg-elevated);
+  }
+  @keyframes bubble-bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-3px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .speech { animation: none; }
+  }
+
+  /* ---------------- 予兆・ログ ---------------- */
+  .telegraph {
+    margin: 12px 14px 0;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--stage);
+    background: color-mix(in srgb, var(--stage) 10%, var(--bg-elevated));
+    border: 1px solid color-mix(in srgb, var(--stage) 30%, var(--border));
+    border-radius: 10px;
+    padding: 8px 12px;
+  }
+
+  .log {
+    list-style: none;
+    margin: 8px 14px 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .log li { display: flex; gap: 6px; }
+  .log li b { color: var(--text); font-weight: 700; }
+
+  /* ---------------- アクションバー ---------------- */
+  .action-bar {
+    margin-top: 16px;
+    padding: 12px 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1.3fr 0.9fr;
+    gap: 8px;
+  }
+  .btn {
+    border: 1px solid var(--border);
+    background: var(--bg-sunken);
+    color: var(--text);
+    font-weight: 700;
+    font-size: 12.5px;
+    border-radius: 10px;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
+  .btn:focus-visible { outline: 2px solid var(--audience); outline-offset: 2px; }
+  .btn--primary { background: var(--stage); color: #fff; border-color: transparent; }
+  .btn--danger { color: var(--danger); }
+
+  /* ---------------- 凡例 ---------------- */
+  .legend {
+    width: 402px;
+    max-width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px 18px;
+  }
+  .legend h2 {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+  }
+  .legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .legend-item span.ic { font-size: 15px; width: 20px; text-align: center; }
+  .legend-item span.desc { color: var(--text-muted); }
+  .legend-divider {
+    grid-column: 1 / -1;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--audience);
+    margin-top: 6px;
+  }
+</style>
+
+<h1 class="page-title">バトル画面設計モック — 客席ボード × 陣形パズル</h1>
+
+<div class="phone">
+  <div class="topbar">
+    <div class="topbar__row">
+      <div class="stage-name">冠番組『金曜アイドル大戦』</div>
+      <div class="formation-tag">V字コンベア</div>
+    </div>
+    <div class="hp-gauge">
+      <span class="hp-gauge__label">客席HP</span>
+      <div class="hp-gauge__track"><div class="hp-gauge__fill" style="width:47%"></div></div>
+      <span class="hp-gauge__value">1,880 / 4,000</span>
+    </div>
+  </div>
+
+  <!-- 舞台+客席(アイドルが上=カメラの方を向いて演じ、客席は手前下) -->
+  <div class="battle-scene">
+
+    <!-- 舞台(陣形) -->
+    <div class="stage-floor">
+      <div class="stage-floor__caption">陣形 — V字コンベア</div>
+
+      <div class="idol" style="left:16%; top:26%;">
+        <div class="idol__wrap">
+          <div class="speech">耳が痛いくらい声援もらってます!</div>
+          <div class="idol__face" style="--face-hue:200">波</div>
+          <div class="idol__attr">🌊</div>
+          <div class="idol__role">💚</div>
+        </div>
+        <div class="idol__name">早坂 波留</div>
+        <div class="idol__hp-track"><div class="idol__hp-fill" style="width:76%"></div></div>
+      </div>
+
+      <div class="idol" style="left:34%; top:46%;">
+        <div class="idol__wrap">
+          <div class="idol__face" style="--face-hue:8">燃</div>
+          <div class="idol__attr">🔥</div>
+          <div class="idol__role">⚔️</div>
+        </div>
+        <div class="idol__name">紅林 燃</div>
+        <div class="idol__hp-track"><div class="idol__hp-fill" style="width:54%"></div></div>
+      </div>
+
+      <div class="idol" style="left:50%; top:70%;">
+        <div class="idol__wrap">
+          <div class="speech" style="animation-delay:1.1s">見て、あたしの番!</div>
+          <div class="idol__face" style="--face-hue:270">輝</div>
+          <div class="idol__attr">🌟</div>
+          <div class="idol__role">⚔️</div>
+        </div>
+        <div class="idol__name">星野 一輝</div>
+        <div class="idol__hp-track idol--warn"><div class="idol__hp-fill" style="width:31%"></div></div>
+      </div>
+
+      <div class="idol" style="left:66%; top:46%;">
+        <div class="idol__wrap">
+          <div class="idol__face" style="--face-hue:42">陽</div>
+          <div class="idol__attr">☀️</div>
+          <div class="idol__role">⚔️</div>
+        </div>
+        <div class="idol__name">陽向 まひろ</div>
+        <div class="idol__hp-track"><div class="idol__hp-fill" style="width:88%"></div></div>
+      </div>
+
+      <div class="idol" style="left:84%; top:26%;">
+        <div class="idol__wrap">
+          <div class="idol__face" style="--face-hue:130">岩</div>
+          <div class="idol__attr">🗿</div>
+          <div class="idol__role">🛡</div>
+        </div>
+        <div class="idol__name">岩城 硬</div>
+        <div class="idol__hp-track"><div class="idol__hp-fill" style="width:97%"></div></div>
+      </div>
+    </div>
+
+    <!-- 客席ボード 3x3(手前・カメラに近い側) -->
+    <div class="audience-deck">
+      <div class="audience-deck__caption">客席ボード</div>
+      <div class="audience-grid">
+        <div class="audience-grid__row--judge" style="display:contents">
+          <div class="block block--critical block--target">
+            <div class="block__icon">🧑‍⚖️</div>
+            <div class="block__label">審査員A</div>
+            <div class="block__hp-track"><div class="block__hp-fill" style="width:18%"></div></div>
+          </div>
+          <div class="block block--low">
+            <div class="block__icon">🧑‍⚖️</div>
+            <div class="block__label">審査員B</div>
+            <div class="block__hp-track"><div class="block__hp-fill" style="width:42%"></div></div>
+          </div>
+          <div class="block">
+            <div class="block__icon">🧑‍⚖️</div>
+            <div class="block__label">審査員C</div>
+            <div class="block__hp-track"><div class="block__hp-fill" style="width:88%"></div></div>
+          </div>
+        </div>
+        <div style="display:contents">
+          <div class="block">
+            <div class="block__icon">👥</div>
+            <div class="block__label">客席・左</div>
+            <div class="block__hp-track"><div class="block__hp-fill" style="width:63%"></div></div>
+          </div>
+          <div class="block block--low">
+            <div class="block__icon">👥</div>
+            <div class="block__label">客席・中央</div>
+            <div class="block__hp-track"><div class="block__hp-fill" style="width:35%"></div></div>
+          </div>
+          <div class="block block--down">
+            <div class="block__icon">👥</div>
+            <div class="block__label">客席・右</div>
+            <div class="block__hp-track"><div class="block__hp-fill" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="audience-grid__row--crew" style="display:contents">
+          <div class="block">
+            <div class="block__icon">📷</div>
+            <div class="block__label">中継クルー</div>
+            <div class="block__hp-track"><div class="block__hp-fill" style="width:91%"></div></div>
+          </div>
+          <div class="block">
+            <div class="block__icon">📱</div>
+            <div class="block__label">SNS実況勢</div>
+            <div class="block__hp-track"><div class="block__hp-fill" style="width:70%"></div></div>
+          </div>
+          <div class="block">
+            <div class="block__icon">🎫</div>
+            <div class="block__label">常連ファン</div>
+            <div class="block__hp-track"><div class="block__hp-fill" style="width:80%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- アイドル→客席への攻撃線(舞台+客席をまたぐので battle-scene 全体を1つのSVGで覆う) -->
+    <svg class="attack-overlay" viewBox="0 0 374 442" preserveAspectRatio="none">
+      <!-- 🎯狙い撃ち: 星野一輝(中央最前列)→審査員A(左) -->
+      <line x1="187" y1="140" x2="70" y2="250" stroke="var(--stage)" stroke-width="2" stroke-dasharray="4 5" />
+      <!-- 💥範囲: 紅林燃(中列左)→客席列(中央+両隣) -->
+      <polygon points="127,92 70,310 187,310 304,310" fill="var(--stage)" opacity="0.14" />
+      <!-- 🌐全体: 陽向まひろ(中列右)→関係者列への薄い放射 -->
+      <line x1="247" y1="92" x2="70" y2="370" stroke="var(--gold)" stroke-width="1.4" opacity="0.5" />
+      <line x1="247" y1="92" x2="304" y2="370" stroke="var(--gold)" stroke-width="1.4" opacity="0.5" />
+    </svg>
+  </div>
+
+  <div class="telegraph">⚠️ 次の曲、<b>審査員A</b>に視線が集中しそう…</div>
+
+  <ul class="log">
+    <li><b>星野 一輝</b>が審査員Aに🎯狙い撃ち — 210pt</li>
+    <li><b>紅林 燃</b>が客席・中央に💥範囲攻撃 — 3ブロックに波及</li>
+    <li>💥 審査員Aに被弾の反撃！客席HP -60</li>
+  </ul>
+
+  <div class="action-bar">
+    <button class="btn">耐える</button>
+    <button class="btn btn--primary">送る</button>
+    <button class="btn btn--danger">撤退</button>
+  </div>
+</div>
+
+<div class="legend">
+  <h2>凡例(① 属性の効果を見た目で判別するための表示)</h2>
+  <div class="legend-grid">
+    <div class="legend-divider">攻撃の形</div>
+    <div class="legend-item"><span class="ic">🎯</span><span>狙い撃ち<span class="desc">・1ブロック集中</span></span></div>
+    <div class="legend-item"><span class="ic">💥</span><span>範囲<span class="desc">・対象+隣接</span></span></div>
+    <div class="legend-item"><span class="ic">🌐</span><span>全体<span class="desc">・場全体に薄く</span></span></div>
+    <div class="legend-item"><span class="ic">🗡</span><span>貫通<span class="desc">・縦一直線</span></span></div>
+    <div class="legend-item"><span class="ic">🔁</span><span>連続<span class="desc">・同一対象2連撃</span></span></div>
+    <div class="legend-item"><span class="ic">🏹</span><span>遠距離<span class="desc">・後列から攻撃可</span></span></div>
+    <div class="legend-divider">ロール</div>
+    <div class="legend-item"><span class="ic">⚔️</span><span>アタッカー<span class="desc">・攻撃特化</span></span></div>
+    <div class="legend-item"><span class="ic">🛡</span><span>ディフェンダー<span class="desc">・軽減/身代わり</span></span></div>
+    <div class="legend-item"><span class="ic">💚</span><span>サポーター<span class="desc">・バフ/回復</span></span></div>
+    <div class="legend-item"><span class="ic">🃏</span><span>オールラウンダー<span class="desc">・光/闇のみ</span></span></div>
+    <div class="legend-divider">客席ブロック(3×3)</div>
+    <div class="legend-item"><span class="ic">🧑‍⚖️</span><span>審査員列<span class="desc">・高HP/狙い撃ち向け</span></span></div>
+    <div class="legend-item"><span class="ic">👥</span><span>客席列<span class="desc">・中HP/範囲向け</span></span></div>
+    <div class="legend-item"><span class="ic">📷📱🎫</span><span>関係者列<span class="desc">・低HP/全体向け</span></span></div>
+  </div>
+</div>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>スカウト候補ジェネレータ（検証用）</title>
+<link rel="stylesheet" href="css/style.css?v=1785558404241" />
+<link rel="icon" href="data:," />
+<style>
+  .scout-portrait {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 12px;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    image-rendering: auto;
+    display: block;
+  }
+  .scout-name {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 800;
+  }
+  /* .scout-info-gridはcss/style.cssの共通定義を使う(§スカウト画面の見た目を
+     ジェネレータに合わせる、正はこちら)。 */
+</style>
+</head>
+<body>
+  <div class="app">
+    <main class="screen">
+      <h1 class="screen__title">スカウト候補ジェネレータ（検証用）</h1>
+      <p class="stat-row stat-row--muted">
+        現行のjs/scoutGenerator.jsのgenerateCandidate()をそのまま呼び出すデバッグ専用ビューア。
+        ゲーム内のお試しステージによる観測・隠しパラメータの仕組みとは無関係に、生成結果を常に全開示する。
+      </p>
+
+      <div class="form-row" style="margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <label for="location-select">場所</label>
+        <select id="location-select"></select>
+      </div>
+
+      <section class="card idol-detail-scroll" id="candidate-card">
+        <!-- generateCandidate()の結果をここに描画 -->
+      </section>
+    </main>
+    <footer class="action-bar">
+      <button class="btn btn--primary" id="generate-btn">スカウトする（ランダム生成）</button>
+    </footer>
+  </div>
+
+  <script src="js/portraitPaintFilter.js?v=1785558404241"></script>
+  <script type="module">
+    import { BALANCE, JOB_TYPES, SCOUT_LOCATIONS, ORIGIN_ATTRIBUTES } from "./js/masterData.js?v=1785558404241";
+    import { generateCandidate, getGrowthPhase } from "./js/scoutGenerator.js?v=1785558404241";
+    import { drawPortraitOnCanvas, formatMan, attributeSummaryHtml, levelStarsHtml } from "./js/ui.js?v=1785558404241";
+    import { statGrowthChartHtml } from "./js/statGrowthChart.js?v=1785558404241";
+    import { getBaseSalary } from "./js/state.js?v=1785558404241";
+
+    const locationSelect = document.getElementById("location-select");
+    locationSelect.innerHTML = SCOUT_LOCATIONS.map(
+      (loc) => `<option value="${loc.id}">${loc.label}（目利き+${loc.rankShift}）</option>`
+    ).join("");
+
+    function renderCandidate(candidate) {
+      const card = document.getElementById("candidate-card");
+      const jobLabel = JOB_TYPES.find((j) => j.key === candidate.desiredJobType)?.label ?? candidate.desiredJobType;
+      const origin = ORIGIN_ATTRIBUTES.find((o) => o.key === candidate.origin);
+      const originStars = levelStarsHtml(origin?.salaryTier ?? 0);
+      const location = SCOUT_LOCATIONS.find((l) => l.id === candidate.locationId);
+      const locationStars = location ? levelStarsHtml((location.rankShift ?? 0) + 1) : "";
+      const { percent: growthPercent, phase } = getGrowthPhase(candidate);
+      const growthArrow = phase === "declining" || phase === "withered" ? "↓" : phase === "peak" ? "→" : "↑";
+      const growthPhaseLabel = phase === "withered" ? "衰え" : phase === "declining" ? "下降中" : phase === "peak" ? "全盛期" : "成長中";
+      // このビューアは常に全開示(未解決0)。実際のゲームでは雇用時点の開示度で
+      // 固定されるが、ここでは検証用に「フルで観測済みなら」の給料を出す。
+      const salary = getBaseSalary(candidate, 0);
+
+      card.innerHTML = `
+        <canvas class="scout-portrait" id="portrait-canvas" width="256" height="256"></canvas>
+        <div class="scout-name">${candidate.name}（${candidate.age}）</div>
+        <div style="text-align:center; margin: 4px 0 8px;">
+          <span class="rank-badge-label">総合評価<span class="rank-badge rank-badge--${candidate.qualityGrade}">${candidate.qualityGrade}</span><span class="rank-badge-sep">/</span><span class="rank-badge rank-badge--${candidate.subQualityGrade}" title="サブ総合評価">${candidate.subQualityGrade}</span></span>
+        </div>
+
+        <div class="scout-info-grid">
+          <span class="scout-tag">${attributeSummaryHtml(candidate)}</span>
+          <span class="scout-tag" title="このビューアには雇用交渉がないため志望職種と同じ値を設定している">現職種: ${jobLabel}</span>
+          <span class="scout-tag">やる気${candidate.interest}</span>
+          <span class="scout-tag">給料 月${formatMan(salary)}</span>
+          <span class="scout-tag" title="${candidate.growthTypeDescription}">成長: ${candidate.growthTypeLabel}</span>
+          <span class="scout-tag">成長度${growthPercent}% ${growthPhaseLabel} ${growthArrow}</span>
+          <span class="scout-tag">${candidate.originLabel} ${originStars}</span>
+          ${location ? `<span class="scout-tag">${location.label} ${locationStars}</span>` : "<span></span>"}
+          <span class="scout-tag" title="${candidate.negotiationPersonalityDescription ?? ""}">性格: ${candidate.negotiationPersonalityLabel}</span>
+          <span class="scout-tag">志望: ${jobLabel}</span>
+        </div>
+
+        <div class="scout-stats scout-stats--rank">${statGrowthChartHtml(candidate)}</div>
+      `;
+
+      drawPortraitOnCanvas(document.getElementById("portrait-canvas"), candidate.portrait);
+    }
+
+    document.getElementById("generate-btn").addEventListener("click", () => {
+      const location = SCOUT_LOCATIONS.find((loc) => loc.id === locationSelect.value);
+      const candidate = generateCandidate({ location });
+      renderCandidate(candidate);
+      window.__lastCandidate = candidate; // デバッグ・テスト用
+    });
+
+    // 初回表示
+    document.getElementById("generate-btn").click();
+  </script>
+</body>
+</html>

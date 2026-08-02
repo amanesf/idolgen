@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>paint filter demo</title>
+<style>
+  body { background:#222; color:#fff; font-family: sans-serif; display:flex; gap:16px; padding:16px; flex-wrap:wrap; }
+  figure { margin:0; text-align:center; }
+  canvas { image-rendering: auto; width:220px; height:220px; background:#fff; border:1px solid #555; }
+  figcaption { font-size:12px; margin-top:4px; }
+</style>
+</head>
+<body>
+  <figure><canvas id="c0" width="256" height="256"></canvas><figcaption>original</figcaption></figure>
+  <figure><canvas id="c1" width="256" height="256"></canvas><figcaption>filter: new default(弱め)</figcaption></figure>
+  <figure><canvas id="c2" width="256" height="256"></canvas><figcaption>filter: old default(旧)</figcaption></figure>
+  <figure><canvas id="c3" width="256" height="256"></canvas><figcaption>original2</figcaption></figure>
+  <figure><canvas id="c4" width="256" height="256"></canvas><figcaption>filter2: new default(弱め)</figcaption></figure>
+  <figure><canvas id="c5" width="256" height="256"></canvas><figcaption>filter2: old default(旧)</figcaption></figure>
+
+  <script src="../js/portraitPaintFilter.js"></script>
+  <script>
+    const img = new Image();
+    img.onload = () => {
+      function drawCell(canvasId, sx, sy) {
+        const c = document.getElementById(canvasId);
+        c.getContext("2d").drawImage(img, sx, sy, 256, 256, 0, 0, 256, 256);
+        return c;
+      }
+      function filterFrom(srcCanvasId, dstCanvasId, options) {
+        const src = document.getElementById(srcCanvasId);
+        const result = PortraitPaintFilter.applyPaintFilter(src, options);
+        document.getElementById(dstCanvasId).getContext("2d").drawImage(result, 0, 0);
+      }
+
+      // r1c1 (紫髪メガネ) と r3c7(銀髪ツインテ)
+      const OLD_DEFAULT = { softenBlurPx: 2, softenOpacity: 0.18, bloomThreshold: 0.85, bloomBlurPx: 4, bloomOpacity: 0.35, saturate: 1.12, contrast: 1.1 };
+
+      drawCell("c0", 0, 0);
+      filterFrom("c0", "c1", {});
+      filterFrom("c0", "c2", OLD_DEFAULT);
+
+      drawCell("c3", 6 * 256, 2 * 256);
+      filterFrom("c3", "c4", {});
+      filterFrom("c3", "c5", OLD_DEFAULT);
+
+      window.__paintFilterDemoReady = true;
+    };
+    img.src = "sheets/batch1.webp";
+  </script>
+</body>
+</html>

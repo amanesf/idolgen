@@ -1,0 +1,2476 @@
+:root {
+  /* §5「明るくポップなUI」。淡いパステル背景+ビビッドなアクセント色。 */
+  --bg: #fff6fb;
+  --bg-grad-a: #fff0f6;
+  --bg-grad-b: #eef2ff;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-strong: #ffffff;
+  --border: rgba(123, 92, 255, 0.18);
+  --text: #3a2a4a;
+  --text-muted: #8f80a3;
+  --accent: #ff5da2;
+  --accent-2: #7b5cff;
+  --success: #1fbf8a;
+  --danger: #ff4d67;
+  --warn: #ff9d2f;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 10px 26px rgba(255, 93, 162, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 全画面スクロール禁止設計: html/body/.appを常に画面ぴったりの高さに固定し、
+   内側にoverflowするコンテンツは無いようにする(長い一覧はページネーション、
+   詳細はモーダルへ追い出す)。 */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Hiragino Sans", "Yu Gothic UI", "Segoe UI", system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255, 93, 162, 0.25), transparent 55%),
+    radial-gradient(circle at 85% 100%, rgba(123, 92, 255, 0.3), transparent 55%),
+    linear-gradient(180deg, var(--bg-grad-a), var(--bg) 55%, var(--bg-grad-b));
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app {
+  max-width: 480px;
+  height: 100dvh;
+  overflow: hidden;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ---------- 画面切り替えアニメーション(§5) ---------- */
+/* 各画面はrender()側で.appのinnerHTMLを丸ごと差し替える(または専用コントローラが
+   同様にcontainer.innerHTMLを差し替える)ため、直下の要素が新規挿入されるたびに
+   自動でこのアニメーションが再生される。個別の画面側でのフラグ管理は不要。 */
+
+.app > * {
+  animation: screen-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes screen-in {
+  0% { opacity: 0; transform: translateY(8px) scale(0.99); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  /* 右側は.settings-corner-btn(§UI改修計画⑫)の分だけ余白を確保し、重なりを防ぐ */
+  padding: 14px 64px 10px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.75);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.topbar__label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.topbar__value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 倒産(§8)の警告表示。所持金がマイナスの間だけ強調する。 */
+.topbar__value--danger {
+  color: var(--danger);
+}
+
+.bankruptcy-warning {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--danger);
+  background: rgba(255, 77, 103, 0.12);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+
+/* ---------- Screen layout ---------- */
+
+.screen {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.screen__title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 4px 0 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.start-screen {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+}
+
+/* タイトル未定(§1)であることを示すプレースホルダーバッジ。差し替え前提の
+   仮テキスト/仮ロゴだと一目で分かるようにする(正式タイトルとして固定しない)。 */
+.start-screen__badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: rgba(123, 92, 255, 0.12);
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 3px 12px;
+  margin-bottom: 14px;
+}
+
+.start-screen__title {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.25;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.start-screen__subtitle {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 12px 0 32px;
+  max-width: 320px;
+}
+
+.start-screen__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  justify-content: space-between;
+}
+
+/* 記者会見/契約更改のような「3〜4択の意思決定」画面向け。全画面スクロール
+   禁止のため、選択肢カードは極力コンパクトに保つ。 */
+.card-list .card {
+  padding: 10px 12px;
+}
+
+.card-list .stage-card__name {
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+
+.card-list .stage-card .stat-row {
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.card-list .btn {
+  padding: 8px 10px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.card__heading {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+  letter-spacing: 0.04em;
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* ---------- Avatar (dummy image substitute) ---------- */
+
+.avatar {
+  --hue: 320;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  background: conic-gradient(
+    from 210deg,
+    hsl(var(--hue) 90% 65%),
+    hsl(calc(var(--hue) + 60) 90% 60%),
+    hsl(var(--hue) 90% 65%)
+  );
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+
+.avatar--sm {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+
+.avatar--md {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+}
+
+.avatar--lg {
+  width: 64px;
+  height: 64px;
+  font-size: 22px;
+  margin: 0 auto 8px;
+}
+
+.avatar--portrait {
+  background: var(--surface);
+  object-fit: cover;
+}
+
+/* 社員(§7)のフロア表示アイコン。専用スプライトが無いため、タレントの
+   avatarとは配色を変えたニュートラルな円+絵文字で見分けをつける。 */
+.avatar--staff {
+  background: linear-gradient(160deg, #cfd6e6, #9aa5c2);
+  font-size: 15px;
+}
+
+/* ---------- Roster (home screen, compact grid for up to 7 idols) ---------- */
+
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+}
+
+.roster-chip {
+  padding: 10px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.roster-chip .avatar--md {
+  margin: 0 auto;
+}
+
+.roster-chip__name {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.roster-chip__tag {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.roster-chip__stats {
+  display: flex;
+  gap: 6px;
+  font-size: 9px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ---------- 疑似3D（クォータービュー）箱庭、§12 ---------- */
+/* 専用スプライトが無いため、既存アバターを純CSSのアイソメトリック風配置で
+   並べるだけの軽量な代替表現。 */
+
+.office-floor {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  border-radius: 16px;
+  background:
+    repeating-linear-gradient(135deg, rgba(60, 40, 90, 0.05) 0 2px, transparent 2px 24px),
+    repeating-linear-gradient(45deg, rgba(60, 40, 90, 0.05) 0 2px, transparent 2px 24px),
+    linear-gradient(160deg, rgba(123, 92, 255, 0.12), rgba(255, 93, 162, 0.08));
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.office-floor__tile {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.office-floor__tile .avatar--sm {
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.35));
+}
+
+.office-floor__age-badge {
+  font-size: 10px;
+  margin-top: -6px;
+}
+
+.office-floor__name {
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ホーム画面に常時表示する縮小版(§2「上部はオフィス風景」)。地図(office-map)と
+   高さを揃える(§UI改修計画①-2、--home-visual-hで一元管理)。 */
+.office-floor--compact {
+  height: var(--home-visual-h, 220px);
+  flex: 0 0 auto;
+}
+
+/* 在籍0人・社員0人のプレースホルダー(§創業メンバー0人化で開始直後の
+   通常状態になった。枠自体は消さずテクスチャ背景を残す)。 */
+.office-floor--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+}
+
+/* オフィス風景のラッパー。在籍人数などのサマリーをオーバーレイ表示する(§UI改修計画①-8)。 */
+.office-floor-wrap {
+  position: relative;
+}
+
+.office-floor__summary {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(4px);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+/* 社員・タレントが床を歩き回っているように見せる徘徊アニメーション(§12「歩いている」演出)。
+   拡大版は移動幅を広く、ホーム常時表示の縮小版は枠が低いぶん控えめにする。 */
+.office-floor__tile--walk {
+  animation: office-tile-walk 5.2s ease-in-out infinite;
+  animation-delay: calc(var(--tile-i, 0) * 0.35s);
+}
+
+.office-floor--compact .office-floor__tile--walk {
+  animation-name: office-tile-walk-compact;
+}
+
+@keyframes office-tile-walk {
+  0%, 100% { margin-left: -26px; }
+  50% { margin-left: 26px; }
+}
+
+@keyframes office-tile-walk-compact {
+  0%, 100% { margin-left: -14px; }
+  50% { margin-left: 14px; }
+}
+
+/* ---------- 地図(§2「下部は地図、オファーが見えて押せる」) ---------- */
+
+.office-map {
+  position: relative;
+  width: 100%;
+  height: 170px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(53, 227, 163, 0.1), rgba(123, 92, 255, 0.1));
+  border: 1px solid var(--border);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+/* ホーム画面に常時表示する縮小版。オフィス風景と高さを揃える(§UI改修計画①-2)。 */
+.office-map--home {
+  height: var(--home-visual-h, 220px);
+}
+
+/* 個別案件ではなく種別ごとの件数集計チップを表示する、非リンクの表示(§UI改修計画①-3/4)。 */
+.map-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  padding: 14px;
+  height: 100%;
+}
+
+.map-summary-chip {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  height: fit-content;
+}
+
+.office-map--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  max-width: 96px;
+}
+
+.map-pin__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 0 4px rgba(255, 93, 162, 0.18);
+  animation: map-pin-bounce 1.6s ease-in-out infinite;
+}
+
+@keyframes map-pin-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.map-pin__label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 96px;
+}
+
+.stat-row {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text);
+  flex-wrap: wrap;
+}
+
+.stat-row--muted {
+  color: var(--text-muted);
+}
+
+/* ---------- Stage card ---------- */
+
+.stage-card__tier {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.stage-card__name {
+  font-size: 17px;
+  font-weight: 800;
+  margin: 2px 0 8px;
+}
+
+.stage-card .stat-row {
+  margin-bottom: 6px;
+}
+
+.stage-select__banner {
+  margin-bottom: 12px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tag--warn {
+  color: #ff8a5c;
+  border-color: #ff8a5c;
+}
+
+.tag--assigned {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.08s ease, opacity 0.15s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn--block {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.btn--primary {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border: none;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(255, 93, 162, 0.35);
+}
+
+.btn--danger {
+  background: rgba(255, 93, 108, 0.14);
+  border-color: rgba(255, 93, 108, 0.4);
+  color: var(--danger);
+}
+
+.action-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+}
+
+.action-bar .btn {
+  flex: 1;
+}
+
+/* メイン画面下部の2段ナビ(§UI再設計Attempt2)。タレント/事務所/ランキングを
+   タップすると画面遷移せず、その1個上にサブ項目行(.nav-sub-row)が展開される。
+   固定行(.nav-main-row)は常時表示、サブ行は展開中のカテゴリのぶんだけ表示する。 */
+.nav-bar.action-bar {
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-bar .btn {
+  font-size: 12px;
+  padding: 10px 2px;
+  white-space: nowrap;
+}
+
+.nav-main-row {
+  display: flex;
+  gap: 6px;
+}
+
+.nav-main-row .btn.is-active {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #fff;
+  border-color: transparent;
+}
+
+.nav-sub-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nav-sub-row[hidden] {
+  display: none;
+}
+
+.nav-sub-row .btn {
+  flex: 1 1 30%;
+}
+
+.nav-sub-row--pair .btn {
+  flex: 1 1 45%;
+}
+
+/* 設定ボタン(§UI再設計Attempt2「設定ボタンは右上において」)。ホーム画面右上に
+   常設し、topbarの上に重ねて表示する。 */
+.settings-corner-btn {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 11;
+  appearance: none;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ---------- Gauges ---------- */
+
+.gauge {
+  margin-bottom: 10px;
+}
+
+.gauge__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.gauge__track {
+  height: 8px;
+  background: rgba(123, 92, 255, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.gauge__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.gauge__fill--stamina {
+  background: linear-gradient(90deg, #35e3a3, #37c9ff);
+}
+
+.gauge__fill--heat {
+  background: linear-gradient(90deg, #ffb648, #ff5da2);
+}
+
+.gauge__fill--score {
+  background: linear-gradient(90deg, #7b5cff, #ff5da2);
+}
+
+.gauge__fill--warn {
+  background: linear-gradient(90deg, #ffb648, var(--danger));
+}
+
+/* 個人メンタル(§4.3、超敏腕マネージャー雇用時のみ表示)。通常のステータス
+   ゲージと見分けがつくよう、上にうっすら仕切り線を入れる。 */
+.gauge--mental {
+  border-top: 1px dashed var(--border);
+  padding-top: 4px;
+}
+
+/* 隠しステータス(§4.1)：開示度が足りないカテゴリのゲージ表示 */
+.gauge__fill--hidden {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(123, 92, 255, 0.18),
+    rgba(123, 92, 255, 0.18) 6px,
+    rgba(123, 92, 255, 0.06) 6px,
+    rgba(123, 92, 255, 0.06) 12px
+  );
+}
+
+.idol-detail__avatar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+/* ---------- Training screen ---------- */
+
+.training-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.training-row__name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 0;
+}
+
+.training-row__select {
+  background: var(--surface-strong);
+  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  padding: 6px 8px;
+  font-size: 12px;
+  max-width: 45%;
+}
+
+/* ---------- Battle screen: gauge card ---------- */
+
+.turn-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.turn-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+.combo-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--warn);
+}
+
+.practice-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.formation-tag {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(255, 93, 162, 0.12);
+  border: 1px solid rgba(255, 93, 162, 0.3);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* ---------- Stage (slots positioned by formation definition, %) ---------- */
+
+.stage {
+  position: relative;
+  height: 300px;
+  /* バトル画面は.stageがflex:1 1 0で伸びて実際の高さが可変になるため、
+   * 「下端50%起点」の淡いグラデーション1枚だけだと大半が透明域に伸びきって
+   * ほぼ真っ白に見えてしまっていた(§バトル画面が白っぽいのはバグなのでは)。
+   * 上下2枚重ねにして濃さも上げ、高さに関わらずしっかり色が乗るようにする。
+   */
+  background: radial-gradient(ellipse at 50% 100%, rgba(255, 93, 162, 0.32), transparent 75%),
+    radial-gradient(ellipse at 50% 0%, rgba(123, 92, 255, 0.24), transparent 65%),
+    var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+
+.stage-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stage-slot__label {
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.stage-slot.is-safe .stage-slot__label {
+  color: #7fe0c2;
+}
+
+.stage-slot.is-exposed .stage-slot__label {
+  color: #ff9db8;
+}
+
+/* ---------- Idol chip (on-stage avatar) ---------- */
+
+.chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 58px;
+}
+
+.chip__face-wrap {
+  position: relative;
+}
+
+.chip__attr-badge,
+.chip__role-badge {
+  position: absolute;
+  font-size: 10px;
+  line-height: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chip__attr-badge {
+  top: -4px;
+  left: -4px;
+}
+
+.chip__role-badge {
+  bottom: -2px;
+  right: -4px;
+}
+
+.chip__rank-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  line-height: 1;
+}
+
+.chip__rank-badge .rank-badge {
+  width: 16px;
+  height: 16px;
+  font-size: 8px;
+}
+
+.chip__name {
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 56px;
+}
+
+.chip__bar {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(123, 92, 255, 0.16);
+  overflow: hidden;
+}
+
+.chip__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #35e3a3, #37c9ff);
+  transition: width 0.5s ease;
+}
+
+.chip--empty {
+  width: 58px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.chip.is-hit .avatar {
+  animation: chip-shake 0.5s ease;
+  box-shadow: 0 0 0 3px rgba(255, 93, 108, 0.6);
+}
+
+.chip.is-retired {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+/* 特能「覚醒」(§4.4)発動時の一時的なきらめき演出 */
+.chip.is-awakened .avatar {
+  animation: chip-awaken 0.9s ease;
+  box-shadow: 0 0 0 4px gold, 0 0 16px 4px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes chip-awaken {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+}
+
+.chip__badge {
+  position: absolute;
+  top: -6px;
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--danger);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 1px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--danger);
+}
+
+@keyframes chip-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.floatie {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+  animation: floatie-rise 0.9s ease forwards;
+}
+
+.floatie--score {
+  color: var(--success);
+}
+
+.floatie--damage {
+  color: var(--danger);
+}
+
+@keyframes floatie-rise {
+  0% { opacity: 0; transform: translate(-50%, 4px); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -26px); }
+}
+
+/* ---------- ②吹き出し(バトル中のセリフ) ---------- */
+
+.speech {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 9.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: var(--shadow);
+  z-index: 5;
+  animation: speech-bounce 1.4s ease-in-out infinite;
+}
+
+.speech::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--surface);
+}
+
+@keyframes speech-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-2px); }
+}
+
+/* ---------- 客席ボード(3×3、attribute effect visualization) ---------- */
+
+.audience-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.audience-block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(123, 92, 255, 0.16);
+  border: 1px solid var(--border);
+}
+
+.audience-block__icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.audience-block__label {
+  font-size: 8.5px;
+  color: var(--text);
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.audience-block__bar {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(123, 92, 255, 0.26);
+  overflow: hidden;
+}
+
+.audience-block__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7b5cff, #35e3a3);
+  transition: width 0.5s ease;
+}
+
+.audience-block.is-low .audience-block__bar-fill {
+  background: linear-gradient(90deg, #ffcf6b, #ff9db8);
+}
+
+.audience-block.is-down {
+  opacity: 0.4;
+  filter: grayscale(0.7);
+}
+
+.audience-block.is-down::after {
+  content: "陥落";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.audience-block.is-hit {
+  animation: chip-shake 0.5s ease;
+}
+
+/* ---------- バトル画面固有のレイアウト ---------- */
+/* 画面全体の高さ固定・overflow:hiddenは全画面共通(html/body/.app、上部で定義済み)。
+   ここではバトル画面ならではの内訳(舞台/客席ボードの折半など)だけを定義する。 */
+
+.battle-screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px 10px;
+  overflow: hidden;
+}
+
+.battle-screen__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.battle-screen__header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.battle-screen .screen__title {
+  font-size: 15px;
+  margin: 0;
+}
+
+.log-toggle-btn {
+  flex: 0 0 auto;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 15px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.battle-screen .gauge-card {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(255, 93, 162, 0.1), rgba(123, 92, 255, 0.14)), var(--surface);
+}
+
+.battle-screen .gauge {
+  margin-bottom: 4px;
+}
+
+.battle-screen .gauge__track {
+  height: 6px;
+}
+
+.battle-screen .stage {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
+
+.battle-screen .audience-board {
+  flex: 1 1 0;
+  min-height: 0;
+  grid-template-rows: repeat(3, 1fr);
+  padding: 6px;
+  gap: 4px;
+}
+
+.battle-screen .audience-block {
+  padding: 3px 3px 4px;
+  gap: 2px;
+}
+
+.battle-screen .audience-block__icon {
+  font-size: 13px;
+}
+
+.battle-screen .audience-block__label {
+  font-size: 7.5px;
+}
+
+/* バトル画面はグリッドが密で背景の淡い紫が薄く見えがち(§バトル画面なんか
+   色薄くない?)なので、演者のスタミナバー・舞台の枠だけバトル画面限定で
+   少し濃くする(loadout.js/contractRenewalView.jsの.chipには影響させない)。 */
+.battle-screen .chip__bar {
+  background: rgba(123, 92, 255, 0.26);
+}
+
+.battle-screen .stage {
+  border-color: rgba(123, 92, 255, 0.32);
+}
+
+.battle-screen .telegraph {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  font-size: 11px;
+  min-height: 0;
+}
+
+/* ---------- モーダル(全画面共通。詳細情報・長い一覧の受け皿) ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(8, 4, 14, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: 80dvh;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.modal-toggle-btn {
+  flex: 0 0 auto;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 15px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* ---------- 一覧の圧縮表示: コンパクト1行リスト + ページネーション ---------- */
+/* 件数が増えうる一覧(ロースター・仕事・社員など)はこの形にして、
+   何件になっても画面に収まるようにする(§全画面スクロール禁止)。 */
+
+.screen-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.screen-header-row .screen__title {
+  margin: 0;
+}
+
+.screen-header-row__actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.list-heading {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  flex: 0 0 auto;
+}
+
+/* ---------- メイン画面最上部のゲームタイトル(§1/§2) ---------- */
+
+.game-title {
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 6px 0 0;
+  color: var(--text-muted);
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---------- タブ(タレント一覧の絞り込み等) ---------- */
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 0 0 auto;
+  padding-bottom: 2px;
+}
+
+.tab {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.tab.is-active {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #fff;
+  border-color: transparent;
+}
+
+/* ---------- 総合評価ランクバッジ(SABCDEFG、§タレント一覧/個人情報) ---------- */
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 900;
+  color: #fff;
+  background: #6d6280;
+  flex: 0 0 auto;
+}
+
+.rank-badge--S { background: linear-gradient(135deg, #ffd23f, #ff9d2f); }
+.rank-badge--A { background: linear-gradient(135deg, #ff5da2, #ff2f86); }
+.rank-badge--B { background: linear-gradient(135deg, #7b5cff, #5c3bd6); }
+.rank-badge--C { background: linear-gradient(135deg, #37c9ff, #2f9dff); }
+.rank-badge--D { background: linear-gradient(135deg, #35e3a3, #14a374); }
+.rank-badge--E { background: #9a8fb0; }
+.rank-badge--F { background: #8f80a3; }
+.rank-badge--G { background: #6d6280; }
+.rank-badge--unknown { background: #4a4160; }
+
+/* 主評価/サブ評価(§残りの3パラメータをサブ総合評価に)の区切り文字。 */
+.rank-badge-sep {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin: 0 1px;
+}
+
+/* ---------- 持ち曲リスト(個人情報画面) ---------- */
+
+.song-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text);
+}
+
+.modal-section {
+  margin-bottom: 12px;
+}
+
+.modal-section__heading {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+  letter-spacing: 0.03em;
+}
+
+/* 生成確率ガイド(guideView.js)の表。既存の.cardの色味に合わせる。 */
+.guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 8px 0 16px;
+}
+
+.guide-table th,
+.guide-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(123, 92, 255, 0.12);
+  vertical-align: top;
+}
+
+.guide-table th {
+  color: var(--text-muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.guide-table td:first-child,
+.guide-table td:nth-child(2) {
+  white-space: nowrap;
+}
+
+/* 成長タイプ表は年齢列が多く横に広がるため、カード自体ではなくこの
+   コンテナだけを横スクロールさせる(§ワイドコンテンツはoverflow-xを持つ)。 */
+.guide-table-scroll {
+  overflow-x: auto;
+}
+
+.guide-table-scroll .guide-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.guide-table-scroll .guide-table th,
+.guide-table-scroll .guide-table td {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.guide-table__decline {
+  background: rgba(255, 138, 92, 0.12);
+}
+
+/* ---------- 1人1行の一覧表示(§UI改修計画②)。タレント一覧・レッスン・
+   グループ選択・オファー一覧・ランキングなど、全一覧画面で共有する。
+   ページ切替ではなく画面内スクロールで全件表示する(§UI改修計画②)。 ---------- */
+
+.scroll-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.talent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.talent-row__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.talent-row__name {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.talent-row__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.talent-row__detail {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.talent-row__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.stat-rank-chip {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(123, 92, 255, 0.08);
+  border-radius: 6px;
+  padding: 1px 5px;
+}
+
+.unit-member-checkbox-label {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.unit-member-checkbox {
+  width: 20px;
+  height: 20px;
+}
+
+.donut-gauge {
+  flex: 0 0 auto;
+}
+
+.trend-chart-wrap {
+  overflow-x: auto;
+  margin-bottom: 6px;
+}
+
+.ranking-row__rank {
+  flex: 0 0 auto;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.ranking-row__value {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(123, 92, 255, 0.07);
+  border: 1px solid var(--border);
+  min-height: 0;
+}
+
+.list-row.is-held {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255, 93, 162, 0.35);
+}
+
+.list-row__name {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-row--wrap .list-row__name {
+  white-space: normal;
+}
+
+.list-row--wrap .list-row__meta {
+  white-space: normal;
+  font-weight: 400;
+}
+
+.list-row__meta {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* スカウト画面の場所/方法/給与体系選択(§スカウト再設計)のような、
+   タイトル+補足を縦に積む一覧行のバリエーション */
+.list-row--column {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list-row--column .list-row__meta {
+  white-space: normal;
+}
+
+.list-row__sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: normal;
+}
+
+/* スカウト画面の中見出し(元はデフォルトh2スタイルで縦を圧迫していたため明示定義) */
+.screen__subtitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 2px 0 6px;
+}
+
+.scout-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* 「何としてデビューさせますか」(JOB_TYPES)向け。縦積みだと画面を圧迫するため
+   2列グリッドにして高さを節約する(§スカウト充実化で契約交渉UIを追加した分の対策)。 */
+.scout-option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.scout-option-grid .list-row {
+  padding: 8px 6px;
+}
+
+.list-row__btn {
+  flex: 0 0 auto;
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding-top: 2px;
+}
+
+.pagination__btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.pagination__btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pagination__count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Turn lock overlay ---------- */
+
+.turn-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 96px;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.turn-lock span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 999px;
+  animation: pulse-fade 1s ease-in-out infinite;
+}
+
+@keyframes pulse-fade {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.action-bar--triple .btn,
+.action-bar--quad .btn {
+  flex: 1;
+  font-size: 12px;
+  padding: 12px 6px;
+}
+
+.btn--boost {
+  background: rgba(255, 200, 60, 0.14);
+  border-color: rgba(255, 200, 60, 0.5);
+  color: #ffc83c;
+}
+
+.modal .log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.log li:first-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.result-banner {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.result-banner--success {
+  color: var(--success);
+}
+
+.result-banner--fail {
+  color: var(--danger);
+}
+
+.result-banner--retreat {
+  color: var(--warn);
+}
+
+.result-banner--timeup {
+  color: var(--text-muted);
+}
+
+/* ---------- History ---------- */
+
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history__item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(123, 92, 255, 0.07);
+}
+
+.history__item--success {
+  color: var(--success);
+}
+
+.history__item--fail {
+  color: var(--danger);
+}
+
+.history__item--retreat {
+  color: var(--warn);
+}
+
+.history__item--timeup {
+  color: var(--text-muted);
+}
+
+/* ---------- Telegraph banner (予兆) ---------- */
+
+.telegraph {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--warn);
+  background: rgba(255, 182, 72, 0.1);
+  border: 1px solid rgba(255, 182, 72, 0.3);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  min-height: 14px;
+}
+
+/* ---------- Loadout screen (pre-battle formation assignment) ---------- */
+
+.loadout-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.loadout-hint--muted {
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.loadout-stage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.loadout-bench {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.loadout-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.loadout-slot__role {
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.loadout-slot__empty {
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.loadout-slot.is-targetable .loadout-slot__empty,
+.loadout-slot.is-targetable .chip {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255, 93, 162, 0.35);
+  border-radius: 50%;
+}
+
+.loadout-slot .chip {
+  cursor: pointer;
+}
+
+.chip.is-held {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.roster-chip--pickable {
+  cursor: pointer;
+}
+
+.loadout-tools {
+  display: flex;
+  gap: 10px;
+}
+
+.loadout-tools .btn {
+  flex: 1;
+}
+
+/* スカウト画面(scoutView.js) */
+.scout-portrait {
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 12px;
+  border-radius: var(--radius-lg);
+  background: #fff;
+  image-rendering: auto;
+  display: block;
+}
+
+/* アイドル詳細画面(§全画面スクロール禁止): 7ステータス分のゲージがあるため
+   スカウト画面より一段圧縮する。 */
+.idol-detail-screen {
+  overflow: hidden;
+}
+
+.idol-detail-card {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+}
+
+.idol-detail-card .scout-portrait {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 8px;
+  border-radius: 50%; /* 他画面のavatarと形を揃える(§UI改修計画③-1) */
+}
+
+.idol-detail-card .idol-detail__avatar {
+  margin-bottom: 8px;
+}
+
+.idol-detail-card .idol-detail__avatar .avatar--lg {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto;
+}
+
+/* §UI改修計画③: 名前/属性/タグの下は縦スクロールにまとめ、給与体系・
+   パワプロ式ステータス・特殊能力・ラストダンス/解雇ボタン・持ち曲の順に並べる。 */
+.idol-detail-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stat-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.stat-rank-row__label {
+  flex: 1 1 auto;
+  color: var(--text-muted);
+}
+
+.stat-rank-row__rank {
+  flex: 0 0 auto;
+  font-weight: 800;
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+}
+
+.stat-rank-row__value {
+  flex: 0 0 auto;
+  width: 28px;
+  text-align: right;
+  color: var(--text-muted);
+}
+
+.talent-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.talent-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.talent-chip--dim {
+  opacity: 0.35;
+}
+
+.talent-chip--plus {
+  color: #1a56db;
+  background: rgba(26, 86, 219, 0.1);
+  border-color: rgba(26, 86, 219, 0.35);
+}
+
+.talent-chip--minus {
+  color: var(--danger);
+  background: rgba(255, 93, 108, 0.1);
+  border-color: rgba(255, 93, 108, 0.4);
+}
+
+.idol-detail-card .scout-name {
+  font-size: 15px;
+}
+
+.idol-detail-card .scout-tags {
+  margin: 4px 0 8px;
+}
+
+.scout-stats--rank {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* スカウト画面(§UI改修計画⑧-2)。以前は「全画面スクロール禁止」の方針で
+   圧縮レイアウトにしていたが、狭い画面ではステータス欄や交渉ボタンが
+   overflow:hiddenで見切れて操作不能になる実害があったため、画面全体を
+   縦スクロール可能にして内容が必ず見えるようにする。 */
+.scout-screen {
+  overflow-y: auto;
+}
+
+.scout-budget-card {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+}
+
+.scout-candidate-card {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px;
+}
+
+.scout-candidate-card .scout-portrait {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 6px;
+}
+
+.scout-candidate-card .scout-name {
+  font-size: 14px;
+}
+
+.scout-candidate-card .scout-tags {
+  margin: 4px 0 6px;
+}
+
+.scout-candidate-card .scout-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3px 10px;
+  flex: 0 0 auto;
+}
+
+.scout-candidate-card .scout-stat {
+  font-size: 10px;
+  grid-template-columns: 28px 1fr 16px;
+}
+
+.scout-candidate-card .scout-fee {
+  flex: 0 0 auto;
+}
+
+.scout-candidate-card .scout-negotiate-row {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+.scout-candidate-card .scout-negotiate-row .btn {
+  font-size: 10px;
+  padding: 6px 3px;
+}
+
+.scout-candidate-card > .stat-row {
+  flex: 0 0 auto;
+  font-size: 10px;
+  text-align: center;
+  margin: 2px 0 0;
+}
+
+.scout-name {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.scout-name__real {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.scout-tags {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0 14px;
+  flex-wrap: wrap;
+}
+
+/* §スカウト画面の見た目をジェネレータ(scout-viewer.html)に合わせる。
+   flex-wrapは候補ごとの文字数差でその都度折り返し位置が変わり不安定なので、
+   2列固定グリッドにしてどのラベル長でも常に同じ位置に収まるようにする
+   (セル内で折り返す分には位置は動かない)。属性・やる気・給料など共通項目は
+   この中に、残り週数やライバルフラグなど各画面独自の項目は.scout-tagsの方に置く。 */
+.scout-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+  margin: 6px 0 14px;
+}
+
+.scout-info-grid .scout-tag {
+  text-align: center;
+  white-space: normal;
+}
+
+.scout-info-grid .scout-tag--span2 {
+  grid-column: 1 / -1;
+}
+
+.scout-tag {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+}
+
+.scout-tag--gem {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border: none;
+  color: #fff;
+  font-weight: 800;
+}
+
+.scout-tag--warn {
+  color: #ff8a5c;
+  border-color: #ff8a5c;
+}
+
+.scout-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scout-stat {
+  display: grid;
+  grid-template-columns: 48px 1fr 32px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.scout-budget-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scout-budget-row input[type="range"] {
+  flex: 1;
+}
+
+.scout-fee {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  margin-top: 10px;
+}
+
+.scout-fee__original {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: line-through;
+  margin-right: 6px;
+}
+
+/* 契約交渉(§スカウト充実化)のスタンス選択。3択を横並びの小型ボタンにして
+   縦の占有を抑える。 */
+.scout-negotiate-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.scout-negotiate-row .btn {
+  flex: 1;
+  font-size: 11px;
+  padding: 8px 4px;
+}
+
+/* §ボタン配置の見直し: 観測ボタン(7+1個)・職種ボタン(6個)のように点数が
+   多い選択肢は、flexの均等配分だと項目数によって幅がバラバラになり読みにくい。
+   固定3列グリッドにして見た目を安定させる。 */
+.scout-negotiate-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.scout-negotiate-grid .btn {
+  font-size: 11px;
+  padding: 8px 4px;
+}
+
+/* ---------- スカウト候補プール(§スカウト再設計「登用交渉」) ---------- */
+
+/* 資質グレードの丸バッジ(rank-badge)だけだと何の数値か分からないため、
+   「総合評価」ラベルを添えて表示する(スカウト候補一覧・詳細の両方で使う)。 */
+.rank-badge-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ホーム画面地図のスカウト候補ピン。既存の.map-pin(絶対配置+吹き出しラベル、
+   本来は仕事案件ピン用に用意されていたが件数集計表示に置き換わり未使用だった)
+   をそのまま再利用し、中身の丸バッジは資質グレードで色分けされたrank-badge、
+   ラベルは残り週数にする。*/
+.map-pin--urgent .rank-badge {
+  box-shadow: 0 0 0 3px rgba(255, 138, 92, 0.45);
+}
+
+/* スカウト画面の候補一覧カード。タップで候補選択→アイドル表示ステップへ進む。 */
+.lead-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(123, 92, 255, 0.07);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.lead-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.lead-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lead-card__name {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.lead-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0;
+}
+
+.lead-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lead-card__weeks {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.lead-card__weeks--urgent {
+  color: #ff8a5c;
+  font-weight: 700;
+}
+
+/* 成長グラフ: 現状/成長(自然に伸びる分)/レッスン(努力で伸ばせる分)を
+   現状→成長→レッスンの順に継ぎ足す加算バーで表示する(重ね合わせではなく
+   横に積み上げる)。 */
+.growth-chart__legend {
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.growth-chart__swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 3px;
+}
+
+.growth-chart__swatch--current { background: #7b5cff; }
+.growth-chart__swatch--grown { background: rgba(123, 92, 255, 0.5); }
+.growth-chart__swatch--lesson { background: rgba(123, 92, 255, 0.2); }
+
+/* ランク文字(rankLabel)をバーの左横に置き、ラベル(略さないフル表記)は
+   バーの上に1行、その下にバー本体という縦積みにする(長い日本語ラベルでも
+   崩れないように)。 */
+.growth-chart__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.growth-chart__rank {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(123, 92, 255, 0.15);
+  color: var(--text);
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.growth-chart__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.growth-chart__label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.growth-chart__track {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(123, 92, 255, 0.06);
+}
+
+.growth-chart__fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+
+.growth-chart__fill--current { background: #7b5cff; border-radius: 999px 0 0 999px; }
+.growth-chart__fill--grown { background: rgba(123, 92, 255, 0.5); }
+.growth-chart__fill--lesson { background: rgba(123, 92, 255, 0.2); border-radius: 0 999px 999px 0; }
+
+.growth-chart__values {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 64px;
+  text-align: right;
+}
+
+/* お試しステージで未観測のステータス行(§スカウトに賭けと発見を持たせる)。 */
+.growth-chart__row--hidden,
+.growth-chart__row--floor {
+  opacity: 0.75;
+}
+
+/* 選択中/確定済みの職種で強みになるステータス行(§役割の強みパラメータ表示)。 */
+.growth-chart__row--highlight {
+  background: rgba(255, 184, 0, 0.1);
+  border-radius: 8px;
+}
+
+.growth-chart__row--highlight .growth-chart__rank {
+  background: rgba(255, 184, 0, 0.35);
+}
+
+.growth-chart__highlight-mark {
+  color: #d69e00;
+}
+
+.growth-chart__track--hidden {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(45deg, rgba(123, 92, 255, 0.08), rgba(123, 92, 255, 0.08) 4px, rgba(123, 92, 255, 0.02) 4px, rgba(123, 92, 255, 0.02) 8px);
+}
+
+.growth-chart__track--unknown {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: repeating-linear-gradient(45deg, rgba(123, 92, 255, 0.15), rgba(123, 92, 255, 0.15) 4px, transparent 4px, transparent 8px);
+  border-radius: 0 999px 999px 0;
+}
+
+/* 契約金/固定給/歩合率の±ボタン(§契約交渉のスライダー廃止、±ボタン化)。
+   標準(0)より左が悪い条件・右が良い条件になるよう負の値も選べる。 */
+.scout-stepper-row {
+  margin-top: 10px;
+}
+
+.scout-stepper-row__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.scout-stepper-row__controls {
+  display: flex;
+  gap: 8px;
+}
+
+.scout-stepper-btn {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 6px;
+}
